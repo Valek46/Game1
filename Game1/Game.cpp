@@ -1,105 +1,53 @@
 #include "Game.h"
-#include <thread>
-#include <chrono>
 
-Game::Game(int size)
-    : position(size / 2),   // стартуем примерно из середины
-    worldSize(size),      // инициализация const-поля
-    isRunning(true),
-    stepCount(0)
+Game::Game()
+    : window(sf::VideoMode(800, 600), "My SFML Game"),
+    speed(200.f)
 {
-    std::cout << "Game created. World size = " << worldSize << "\n";
-}
+    window.setFramerateLimit(60);
 
-Game::~Game() {
-    std::cout << "Game destroyed. Total steps = " << stepCount << "\n";
-}
-
-void Game::clearScreen() const {
-#ifdef _WIN32
-    system("cls");
-#else
-    system("clear");
-#endif
-}
-
-void Game::draw() const {
-    clearScreen();
-
-    // Рамка сверху
-    std::cout << '+';
-    for (int i = 0; i < worldSize; ++i) {
-        std::cout << '-';
-    }
-    std::cout << "+\n";
-
-    // Линия с игроком
-    std::cout << '|';
-    for (int i = 0; i < worldSize; ++i) {
-        if (i == position) {
-            std::cout << '@';
-        }
-        else {
-            std::cout << '.';
-        }
-    }
-    std::cout << "|\n";
-
-    // Рамка снизу
-    std::cout << '+';
-    for (int i = 0; i < worldSize; ++i) {
-        std::cout << '-';
-    }
-    std::cout << "+\n";
-
-    std::cout << "Controls: a - left, d - right, q - quit\n";
-    std::cout << "Position: " << position + 1 << "/" << worldSize
-        << " | Steps: " << stepCount << "\n";
-}
-
-void Game::update(char input) {
-    if (input == 'a') {
-        if (position > 0) {
-            position -= 1;
-            ++stepCount;
-        }
-    }
-    else if (input == 'd') {
-        if (position < worldSize - 1) {
-            position += 1;
-            ++stepCount;
-        }
-    }
-    else if (input == 'q') {
-        isRunning = false;
-    }
+    player.setSize(sf::Vector2f(50.f, 50.f));
+    player.setFillColor(sf::Color::Green);
+    player.setPosition(400 - 25, 300 - 25);
 }
 
 void Game::run() {
-    while (isRunning) {
-        draw();
+    sf::Clock clock;
 
-        char command;
-        std::cin >> command;
+    while (window.isOpen()) {
+        sf::Time dt = clock.restart();
 
-        update(command);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        processEvents();
+        update(dt);
+        render();
     }
-
-    std::cout << "Game Over!\n";
 }
 
-// ----- Геттеры (const-методы) -----
-
-int Game::getPosition() const {
-    return position;
+void Game::processEvents() {
+    sf::Event event;
+    while (window.pollEvent(event)) {
+        if (event.type == sf::Event::Closed)
+            window.close();
+    }
 }
 
-int Game::getWorldSize() const {
-    return worldSize;
+void Game::update(sf::Time dt) {
+    sf::Vector2f movement(0.f, 0.f);
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+        movement.x -= speed * dt.asSeconds();
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+        movement.x += speed * dt.asSeconds();
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+        movement.y -= speed * dt.asSeconds();
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+        movement.y += speed * dt.asSeconds();
+
+    player.move(movement);
 }
 
-int Game::getStepCount() const {
-    return stepCount;
+void Game::render() {
+    window.clear(sf::Color::Black);
+    window.draw(player);
+    window.display();
 }
